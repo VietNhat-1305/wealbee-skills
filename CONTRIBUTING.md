@@ -9,7 +9,7 @@ python3 scripts/validate_skills.py
 python3 -m unittest discover -s tests
 ```
 
-CI chạy hai lệnh này trên Python 3.9 và 3.12.
+CI chạy hai lệnh này trên Python 3.9 và 3.13.
 
 ## Thêm hoặc sửa một skill
 
