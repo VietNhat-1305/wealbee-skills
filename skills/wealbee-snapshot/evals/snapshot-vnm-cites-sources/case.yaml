@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: snapshot-vnm-cites-sources
+expected_outcome: |
+  A SNAPSHOT.md for Vinamilk (VNM), Q3/2026, built only from Wealbee Data API numbers. It gives parent-company profit and
+  growth versus Q3/2025, margins, ROE, a quarterly trend, a comparison with the median of corporate filings for the same
+  quarter, recent news, and the source PDF link. It makes no buy/sell/hold call. Figures were checked on 25/11/2026: parent
+  profit 2,964.2 billion VND (+17.3%), revenue 18,465.2 billion VND (+8.7%); a later restatement could change them.

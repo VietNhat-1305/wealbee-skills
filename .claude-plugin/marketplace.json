@@ -1,0 +1,18 @@
+{
+  "name": "wealbee",
+  "owner": { "name": "Wealbee", "url": "https://wealbee.com" },
+  "metadata": {
+    "description": "Agent Skills phân tích doanh nghiệp niêm yết Việt Nam bằng số liệu Wealbee Data API.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "wealbee-skills",
+      "source": "./",
+      "description": "9 skill phân tích cổ phiếu Việt Nam bằng BCTC đã kiểm chứng, có dẫn nguồn PDF gốc, không khuyến nghị mua bán.",
+      "version": "0.1.0",
+      "category": "finance",
+      "homepage": "https://github.com/VietNhat-1305/wealbee-skills"
+    }
+  ]
+}

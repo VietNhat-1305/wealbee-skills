@@ -1,0 +1,12 @@
+# Khoá và bí mật
+.env
+*.env
+# Python
+__pycache__/
+*.pyc
+.venv/
+# Kết quả chạy skill trong thư mục gốc (ví dụ mẫu nằm trong examples/)
+/wealbee-*-[0-9]*/
+*-workspace/
+evals/results/
+.DS_Store
