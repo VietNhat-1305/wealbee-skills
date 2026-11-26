@@ -50,3 +50,5 @@
 - `news --ticker` trả cả tin chỉ nhắc mã trong `tickers`. Tin "về" mã là tin có `primary_ticker` đúng mã; vẫn đọc tiêu đề vì đôi khi mã bị gắn nhầm.
 - `net_profit_parent.ytd_prior_year` chưa có, nên tăng trưởng luỹ kế của lợi nhuận công ty mẹ thường trống.
 - `equity_parent` chưa có ở mọi BCTC; khi thiếu, ROE tính trên tổng vốn chủ (xem `roe_basis`).
+- Vài `document_url` (VD CDN của Vinamilk) trả 403 khi tải không có User-Agent trình duyệt, nhưng mở bình thường trên trình duyệt. Cần đọc PDF thì tải lại với User-Agent trình duyệt, hoặc dùng bản ở `filings` và đối chiếu `file_sha256`. Trong báo cáo vẫn dẫn `document_url`.
+- Một số quý năm trước lấy từ cột cùng kỳ chưa tách được lợi nhuận công ty mẹ (ghi chú `parent_profit_not_separated` trong `statement`): khi đó số "công ty mẹ" bằng tổng lợi nhuận sau thuế. Tăng trưởng tính trên quý đó phải ghi rõ, chưa nên trích dẫn.
