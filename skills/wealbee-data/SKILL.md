@@ -36,6 +36,9 @@ Gọi bằng đường dẫn tuyệt đối: `python3 <thư mục skill wealbee-
 | `versions <MÃ.KỲ> [--version N]` | Lịch sử phiên bản và lý do sửa | Số liệu bị sửa, kiểm chứng |
 | `filings [--ticker] [--period]` | File BCTC gốc: link, SHA-256, ngày công bố, lúc Wealbee phát hiện | Dẫn nguồn, kiểm file gốc |
 | `glossary <thuật ngữ>` | Định nghĩa, tên tiếng Anh, ví dụ, thuật ngữ liên quan (không cần khoá) | Giải thích thuật ngữ |
+| `prices <MÃ> [--from] [--to]` | Giá đóng cửa ngày (nghìn đồng, đã điều chỉnh cổ tức, chia tách) từ nguồn công khai | Cần giá cổ phiếu hoặc chỉ số (VNINDEX, HNXINDEX, UPCOMINDEX) |
+| `reaction <MÃ> [--period] [--all]` | Ngày công bố BCTC, lợi suất sau 1, 5, 10, 20 phiên và đến nay, so với chỉ số sàn | "Từ lúc ra BCTC đến giờ giá tăng bao nhiêu" |
+| `event-study --period … --tickers …` | Backtest nhiều mã, nhiều kỳ: lợi suất vượt chỉ số theo nhóm tăng trưởng lợi nhuận | Phản ứng giá quanh mùa BCTC |
 
 Kỳ nhận `2026Q3`, `Q3/2026`, `quý 3/2026`, `9T/2026`. Đã kết nối Wealbee MCP thì có thể gọi tool tương ứng (`wealbee_statement_summary`, `wealbee_compare_companies`, `wealbee_quarterly_trend`, `wealbee_industry_benchmark`, …) thay cho script; số liệu và cách tính giống nhau.
 

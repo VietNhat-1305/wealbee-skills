@@ -18,12 +18,14 @@ Mỗi skill là một quy trình phân tích hoàn chỉnh. Skill lấy số qua
 | [`wealbee-fact-check`](skills/wealbee-fact-check/SKILL.md) | "Số trong bài này đúng không?" | Bảng Đúng / Sai / Không kiểm được, kèm số đúng và nguồn |
 | [`wealbee-explain`](skills/wealbee-explain/SKILL.md) | "ROE là gì, cho ví dụ thật" | Định nghĩa từ từ điển 490 thuật ngữ, ví dụ tính bằng BCTC thật |
 | [`wealbee-watchlist`](skills/wealbee-watchlist/SKILL.md) | "Danh mục của tôi có gì mới từ hôm qua?" | BCTC mới, BCTC bị sửa hay bị rút, tin mới, gom theo mã |
+| [`wealbee-earnings-reaction`](skills/wealbee-earnings-reaction/SKILL.md) | "Từ lúc ra BCTC đến giờ VNM tăng bao nhiêu?", "backtest mỗi lần công bố BCTC" | Lợi suất sau 1, 5, 10, 20 phiên và đến nay so với chỉ số; backtest nhiều mã theo nhóm tăng trưởng lợi nhuận |
 | [`wealbee-data`](skills/wealbee-data/SKILL.md) | (nền tảng) | Cài khoá, công cụ dòng lệnh `wealbee.py`, quy tắc chung về số liệu và pháp lý |
 
 Xem đầu ra thật, chạy ngày 25/11/2026:
 
 - [Phân tích nhanh Vinamilk (VNM), quý 3/2026](examples/wealbee-snapshot-vnm-20261125/SNAPSHOT.md)
 - [So sánh 5 ngân hàng BID, CTG, MBB, TCB, VCB, quý 3/2026](examples/wealbee-peer-compare-ngan-hang-20261125/COMPARISON.md)
+- [Phản ứng giá sau 90 lần công bố BCTC của VN30 năm 2026, và VNM từ lúc công bố đến nay](examples/wealbee-earnings-reaction-vn30-20261126/REACTION.md)
 
 ## Cài đặt
 
@@ -38,7 +40,7 @@ Hoặc chép thư mục `skills/` vào `~/.claude/skills/` (dùng cho mọi dự
 
 ### Agent khác theo chuẩn Agent Skills
 
-Chép thư mục `skills/` vào chỗ agent đọc skill. Agent cần chạy được Python 3.9 trở lên và gọi mạng tới `data.wealbee.com`. Script chỉ dùng thư viện chuẩn, không cần `pip install`.
+Chép thư mục `skills/` vào chỗ agent đọc skill. Agent cần chạy được Python 3.9 trở lên và gọi mạng tới `data.wealbee.com`. Script chỉ dùng thư viện chuẩn, không cần `pip install`. Skill `wealbee-earnings-reaction` cần thêm mạng tới nguồn giá công khai (VNDirect, dự phòng DNSE) hoặc file giá CSV của bạn.
 
 ### Khoá API
 
@@ -79,7 +81,7 @@ Cách tính từng chỉ số nằm ở [`chi-so.md`](skills/wealbee-data/refere
 .claude-plugin/          plugin.json, marketplace.json (cài bằng /plugin)
 skills/
   wealbee-data/          nền tảng: SKILL.md, scripts/wealbee.py, references/
-  wealbee-*/             8 skill phân tích, mỗi skill một SKILL.md (một số có evals/)
+  wealbee-*/             9 skill phân tích, mỗi skill một SKILL.md (một số có evals/)
 examples/                đầu ra thật, kèm evidence/
 scripts/validate_skills.py   kiểm cấu trúc skill, link, eval, và quét khoá lộ
 tests/                   test cho wealbee.py, chạy không cần mạng
@@ -115,7 +117,8 @@ Each skill is a complete workflow:
 - **news-digest**: news clustered from many outlets;
 - **fact-check**: checks the numbers in any text against the filings;
 - **explain**: a term explained with real filed numbers;
-- **watchlist**: what changed since a given date.
+- **watchlist**: what changed since a given date;
+- **earnings-reaction**: how the price moved after each financial statement release, and an event-study backtest across tickers and quarters.
 
 Every number carries its period, unit, scope and a link to the source PDF. Ratios are computed the same way in every skill. The skills never give buy, sell or hold calls, because Vietnamese securities law treats those as licensed investment advice.
 

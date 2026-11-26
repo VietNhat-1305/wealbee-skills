@@ -52,3 +52,12 @@
 - `equity_parent` chưa có ở mọi BCTC; khi thiếu, ROE tính trên tổng vốn chủ (xem `roe_basis`).
 - Vài `document_url` (VD CDN của Vinamilk) trả 403 khi tải không có User-Agent trình duyệt, nhưng mở bình thường trên trình duyệt. Cần đọc PDF thì tải lại với User-Agent trình duyệt, hoặc dùng bản ở `filings` và đối chiếu `file_sha256`. Trong báo cáo vẫn dẫn `document_url`.
 - Một số quý năm trước lấy từ cột cùng kỳ chưa tách được lợi nhuận công ty mẹ (ghi chú `parent_profit_not_separated` trong `statement`): khi đó số "công ty mẹ" bằng tổng lợi nhuận sau thuế. Tăng trưởng tính trên quý đó phải ghi rõ, chưa nên trích dẫn.
+
+## Giá cổ phiếu (lệnh prices, reaction, event-study)
+
+- Data API chưa có giá. Script lấy giá đóng cửa ngày từ dữ liệu biểu đồ công khai của VNDirect, dự phòng DNSE. Đây là nguồn không chính thức, có thể đổi hay ngừng bất cứ lúc nào; ghi tên nguồn và ngày lấy trong báo cáo.
+- Đơn vị nghìn đồng. Giá đã điều chỉnh cổ tức và chia tách (giá cũ có số lẻ), nên lợi suất đã gồm cổ tức nhưng giá cũ khác giá niêm yết lúc đó.
+- Chỉ số sàn theo `exchange` của công ty: HOSE → VNINDEX, HNX → HNXINDEX, UPCOM → UPCOMINDEX.
+- Ngày công bố BCTC: `filings.issuer_release_date`, `filings.detected_at` (lúc Wealbee phát hiện, có thể muộn), ngày trong tên file, hoặc hạn luật (20 ngày sau cuối quý, 30 ngày với BCTC hợp nhất). Script lấy ngày sớm nhất có được; hiện nhiều kỳ trước quý 3/2026 chưa có ngày thật.
+- Dùng giá riêng: `WEALBEE_PRICE_CSV_DIR=<thư mục>` với file `<MÃ>.csv` hai cột `date,close`. Chọn một nguồn: `WEALBEE_PRICE_SOURCE=vndirect|dnse`.
+

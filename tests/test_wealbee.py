@@ -195,8 +195,63 @@ class DongLenh(unittest.TestCase):
     def test_help(self):
         r = self.chay("--help")
         self.assertEqual(r.returncode, 0)
-        for lenh in ("summary", "compare", "trend", "benchmark", "news", "events", "glossary"):
+        for lenh in ("summary", "compare", "trend", "benchmark", "news", "events", "glossary", "prices", "reaction", "event-study"):
             self.assertIn(lenh, r.stdout)
+
+
+class PhanUngGia(unittest.TestCase):
+    """Ngày công bố, cửa sổ phản ứng giá, nhóm tăng trưởng, giá từ CSV (không gọi mạng)."""
+    GIA = [("2026-10-28", 100.0), ("2026-10-29", 101.0), ("2026-10-30", 102.0), ("2026-11-02", 104.0),
+           ("2026-11-03", 103.0), ("2026-11-04", 105.0), ("2026-11-05", 106.0), ("2026-11-06", 108.0)]
+    CS = [("2026-10-28", 1000.0), ("2026-10-29", 1000.0), ("2026-10-30", 1000.0), ("2026-11-02", 1010.0),
+          ("2026-11-03", 1000.0), ("2026-11-04", 1020.0), ("2026-11-05", 1020.0), ("2026-11-06", 1030.0)]
+
+    def test_ngay_uu_tien_filings_va_gio(self):
+        f = [{"period": "2026Q3", "issuer_release_date": "2026-10-30", "detected_at": "2026-10-30T17:09:34+07:00"},
+             {"period": "2026Q2", "issuer_release_date": "2026-07-01"}]
+        cb = wb.ngay_cong_bo("2026Q3", f, [])
+        self.assertEqual((cb["date"], cb["time"], cb["source"], cb["estimated"]), ("2026-10-30", "17:09", "issuer_release_date", False))
+
+    def test_lay_ngay_som_nhat_khi_wealbee_phat_hien_muon(self):
+        f = [{"period": "2026Q3", "detected_at": "2026-11-25T22:03:00+07:00", "document_url": "https://x/VHM_20261030_BCTC.pdf"}]
+        cb = wb.ngay_cong_bo("2026Q3", f, [f[0]["document_url"]])
+        self.assertEqual((cb["date"], cb["source"], cb["after_deadline"]), ("2026-10-30", "document_url", False))
+        cb = wb.ngay_cong_bo("2026Q3", [f[0]], [])
+        self.assertEqual((cb["date"], cb["after_deadline"]), ("2026-11-25", True))
+
+    def test_ngay_tu_ten_file_roi_han_luat(self):
+        cb = wb.ngay_cong_bo("2026Q2", [], ["https://x/cms/20260730_VNM_BCTC_Q2.pdf"])
+        self.assertEqual((cb["date"], cb["source"], cb["estimated"]), ("2026-07-30", "document_url", True))
+        cb = wb.ngay_cong_bo("2026Q2", [], ["https://x/BCTC_20250115.pdf"])        # ngày ngoài khoảng hợp lý: bỏ qua
+        self.assertEqual((cb["date"], cb["source"]), ("2026-07-30", "legal_deadline"))
+        self.assertEqual(wb.ngay_cong_bo("2026Q4", [], [], hop_nhat=False)["date"], "2027-01-20")
+
+    def test_cong_bo_sau_gio_dong_cua_phan_ung_phien_sau(self):
+        r = wb.phan_ung({"date": "2026-10-30", "time": "17:09"}, self.GIA, self.CS, (1, 5))
+        self.assertEqual((r["base_date"], r["first_session"]), ("2026-10-30", "2026-11-02"))
+        self.assertEqual(r["windows"]["1"]["stock_pct"], round((104 / 102 - 1) * 100, 2))
+        self.assertEqual(r["windows"]["1"]["excess_pct"], round((104 / 102 - 1) * 100 - 1.0, 2))
+        self.assertEqual(r["windows"]["5"]["date"], "2026-11-06")
+        self.assertEqual(r["to_date"]["sessions"], 5)
+
+    def test_cong_bo_trong_phien_va_khong_ro_gio(self):
+        r = wb.phan_ung({"date": "2026-10-30", "time": "10:00"}, self.GIA, self.CS, (1,))
+        self.assertEqual((r["base_date"], r["first_session"]), ("2026-10-29", "2026-10-30"))
+        r = wb.phan_ung({"date": "2026-10-31", "time": None}, self.GIA, self.CS, (1,))   # thứ Bảy, không rõ giờ
+        self.assertEqual((r["base_date"], r["first_session"]), ("2026-10-30", "2026-11-02"))
+        self.assertIsNone(wb.phan_ung({"date": "2026-11-06", "time": None}, self.GIA, self.CS))   # chưa có phiên sau
+
+    def test_nhom_tang_truong(self):
+        self.assertEqual([wb._nhom_tang(v) for v in (-5, 0, 20, 20.1, None)],
+                         ["giam", "tang_0_20", "tang_0_20", "tang_tren_20", "khong_tinh_duoc"])
+
+    def test_gia_tu_csv(self):
+        from datetime import date
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"WEALBEE_PRICE_CSV_DIR": d}):
+            (Path(d) / "ABC.csv").write_text("date,close\n2026-11-03,10.5\n2026-11-02,10\n2026-12-01,11\n", encoding="utf-8")
+            out, nguon = wb.gia("abc", date(2026, 11, 1), date(2026, 11, 30))
+            self.assertEqual(out, [("2026-11-02", 10.0), ("2026-11-03", 10.5)])
+            self.assertEqual(nguon, "csv:ABC.csv")
 
 
 if __name__ == "__main__":

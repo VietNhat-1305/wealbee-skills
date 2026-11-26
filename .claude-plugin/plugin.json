@@ -1,7 +1,7 @@
 {
   "name": "wealbee-skills",
-  "version": "0.1.1",
-  "description": "Phân tích cổ phiếu Việt Nam bằng BCTC đã kiểm chứng từ Wealbee Data API: snapshot, đọc BCTC, so sánh, mặt bằng ngành, điểm tin, kiểm chứng số liệu, giải thích thuật ngữ, theo dõi danh mục. Mọi số có link PDF gốc, không khuyến nghị mua bán.",
+  "version": "0.2.0",
+  "description": "Phân tích cổ phiếu Việt Nam bằng BCTC đã kiểm chứng từ Wealbee Data API: snapshot, đọc BCTC, so sánh, mặt bằng ngành, điểm tin, kiểm chứng số liệu, giải thích thuật ngữ, theo dõi danh mục, phản ứng giá quanh ngày công bố BCTC. Mọi số có link PDF gốc, không khuyến nghị mua bán.",
   "author": { "name": "Wealbee", "url": "https://wealbee.com" },
   "homepage": "https://github.com/VietNhat-1305/wealbee-skills",
   "repository": "https://github.com/VietNhat-1305/wealbee-skills",

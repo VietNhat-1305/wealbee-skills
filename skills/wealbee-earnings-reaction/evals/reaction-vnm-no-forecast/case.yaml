@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: reaction-vnm-no-forecast
+expected_outcome: |
+  A REACTION.md for VNM that uses the Wealbee release date of the Q3/2026 statement (30/10/2026, published after 15:00, so the
+  first reacting session is 02/11/2026), measures the return from the 30/10 close to today on dividend-adjusted prices, and
+  compares it with VN-Index over the same window. It covers the other quarters only with their date source stated
+  (estimated dates flagged). It answers the "buy after good results" part with history only, says the sample is too small,
+  and gives no buying strategy, recommendation or forecast.

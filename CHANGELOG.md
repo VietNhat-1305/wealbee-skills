@@ -2,6 +2,14 @@
 
 Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/) và [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [0.2.0] - 2026-11-26
+
+### Thêm
+- Skill `wealbee-earnings-reaction`: giá thay đổi bao nhiêu từ lúc công bố BCTC (sau 1, 5, 10, 20 phiên và đến nay), so với chỉ số sàn; backtest nhiều mã, nhiều kỳ theo nhóm tăng trưởng lợi nhuận công ty mẹ, kèm quy tắc chỉ nêu khác biệt đủ chắc.
+- Lệnh `prices`, `reaction`, `event-study` trong `wealbee.py`. Giá đóng cửa ngày đã điều chỉnh từ nguồn công khai (VNDirect, dự phòng DNSE) hoặc file CSV riêng.
+- Ngày công bố BCTC: lấy ngày sớm nhất giữa ngày doanh nghiệp công bố, lúc Wealbee phát hiện và ngày trong tên file; không có thì ước tính theo hạn luật; ngày muộn hơn hạn được gắn cờ.
+- Ví dụ thật: 90 lần công bố BCTC của 30 mã VN30 năm 2026 và VNM từ lúc công bố đến nay. Eval cho skill mới.
+
 ## [0.1.1] - 2026-11-26
 
 ### Sửa

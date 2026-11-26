@@ -18,6 +18,9 @@ Lấy khoá tại https://wealbee.com/developers. Script không in khoá và kh�
     python3 wealbee.py versions HPG.2026Q3
     python3 wealbee.py filings --ticker HPG
     python3 wealbee.py glossary ROE                     # từ điển Wealbee, không cần khoá
+    python3 wealbee.py prices VNM --from 2026-10-01     # giá đóng cửa ngày (nguồn công khai, đã điều chỉnh)
+    python3 wealbee.py reaction VNM [--period 2026Q3 | --all]   # giá đổi bao nhiêu từ lúc công bố BCTC, so với chỉ số
+    python3 wealbee.py event-study --period 2026Q3 --tickers VNM FPT HPG   # backtest phản ứng giá theo nhóm tăng trưởng
 
 Kết quả là JSON (UTF-8) trên stdout. Lỗi in JSON ``{"error": ...}`` và thoát với mã 1.
 Kỳ nhận nhiều cách viết: 2026Q3, Q3/2026, quý 3/2026, 9T/2026.
@@ -36,11 +39,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-PHIEN_BAN = "0.1.1"
+PHIEN_BAN = "0.2.0"
 API = os.environ.get("WEALBEE_API_BASE", "https://data.wealbee.com/v1").rstrip("/")
 TU_DIEN_URL = "https://wealbee.com/api/glossary"
 UA = f"wealbee-skills/{PHIEN_BAN} (+https://github.com/VietNhat-1305/wealbee-skills)"
@@ -450,6 +453,272 @@ def lenh_glossary(a):
             "page_url_pattern": "https://wealbee.com/tu-dien/<thuật-ngữ-không-dấu>", "note": None if hop else "Không thấy trong từ điển."}
 
 
+# ---------------------------------------------------------------- giá cổ phiếu và phản ứng quanh ngày công bố BCTC
+
+NGUON_GIA = {   # nguồn công khai, không chính thức: giá đóng cửa ngày, nghìn đồng, đã điều chỉnh cổ tức và chia tách
+    "vndirect": lambda ma, chi_so, tu, den: f"https://dchart-api.vndirect.com.vn/dchart/history?symbol={ma}&resolution=D&from={tu}&to={den}",
+    "dnse": lambda ma, chi_so, tu, den: (f"https://services.entrade.com.vn/chart-api/v2/ohlcs/{'index' if chi_so else 'stock'}"
+                                          f"?from={tu}&to={den}&symbol={ma}&resolution=1D"),
+}
+CHI_SO_SAN = {"HOSE": "VNINDEX", "HNX": "HNXINDEX", "UPCOM": "UPCOMINDEX"}
+CUA_SO = (1, 5, 10, 20)
+
+
+def gia(ma: str, tu: date, den: date) -> tuple[list[tuple[str, float]], str]:
+    """Giá đóng cửa ngày từ `tu` đến `den`: ([(ngày ISO, giá)], tên nguồn). Đệm 6 giờ.
+    WEALBEE_PRICE_CSV_DIR=<thư mục> dùng file <MÃ>.csv (cột date,close) thay cho nguồn mạng;
+    WEALBEE_PRICE_SOURCE=vndirect|dnse chọn một nguồn."""
+    ma = ma.strip().upper()
+    csv_dir = os.environ.get("WEALBEE_PRICE_CSV_DIR")
+    if csv_dir:
+        f = Path(csv_dir) / f"{ma}.csv"
+        if not f.exists():
+            raise LoiWealbee(f"Không có file giá {f}")
+        out = []
+        for dong in f.read_text(encoding="utf-8").splitlines()[1:]:
+            c = [x.strip() for x in dong.split(",")]
+            if len(c) >= 2 and c[0] and tu.isoformat() <= c[0][:10] <= den.isoformat():
+                out.append((c[0][:10], float(c[1])))
+        return sorted(out), f"csv:{f.name}"
+    f = DEM / f"gia-{ma}-{tu}-{den}.json"
+    if f.exists() and time.time() - f.stat().st_mtime < 6 * 3600:
+        d = json.loads(f.read_text(encoding="utf-8"))
+        return [tuple(x) for x in d["gia"]], d["nguon"]
+    chi_so = ma in CHI_SO_SAN.values() or ma in ("VN30", "HNX30")
+    t0 = int(datetime.combine(tu, datetime.min.time(), VN).timestamp())
+    t1 = int(datetime.combine(den, datetime.max.time(), VN).timestamp())
+    ds = [os.environ["WEALBEE_PRICE_SOURCE"]] if os.environ.get("WEALBEE_PRICE_SOURCE") else list(NGUON_GIA)
+    loi = []
+    for ten in ds:
+        try:
+            req = urllib.request.Request(NGUON_GIA[ten](ma, chi_so, t0, t1), headers={"User-Agent": "Mozilla/5.0 " + UA})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                d = json.loads(r.read().decode("utf-8"))
+            if d.get("t") and d.get("c"):
+                out = sorted({datetime.fromtimestamp(t, VN).date().isoformat(): float(c) for t, c in zip(d["t"], d["c"]) if c}.items())
+                try:
+                    DEM.mkdir(parents=True, exist_ok=True)
+                    f.write_text(json.dumps({"gia": out, "nguon": ten}), encoding="utf-8")
+                except OSError:
+                    pass
+                return out, ten
+            loi.append(f"{ten}: không có dữ liệu")
+        except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
+            loi.append(f"{ten}: {type(e).__name__}")
+    raise LoiWealbee(f"Không lấy được giá {ma} ({'; '.join(loi)}). Có thể dùng WEALBEE_PRICE_CSV_DIR với file giá riêng.")
+
+
+def _han_luat(ky: str, hop_nhat: bool) -> date:
+    """Hạn công bố BCTC quý (ước tính): 20 ngày sau cuối quý, 30 ngày nếu là BCTC hợp nhất."""
+    nam, q = int(ky[:4]), int(ky[-1])
+    cuoi = date(nam, 12, 31) if q == 4 else date(nam, q * 3 + 1, 1) - timedelta(days=1)
+    return cuoi + timedelta(days=30 if hop_nhat else 20)
+
+
+def ngay_cong_bo(ky: str, filings: list[dict], urls: list[str], hop_nhat: bool = True) -> dict:
+    """Ngày công bố BCTC của một kỳ. Ứng viên: issuer_release_date, detected_at (lúc Wealbee phát hiện, có thể muộn),
+    ngày trong tên file BCTC. Lấy ngày sớm nhất, vì không thể công bố sau lúc bị phát hiện. Không có ứng viên nào thì
+    ước tính theo hạn luật. after_deadline = true: ngày chọn được muộn hơn hạn luật, cần kiểm."""
+    nam, q = int(ky[:4]), int(ky[-1])
+    cuoi = date(nam, 12, 31) if q == 4 else date(nam, q * 3 + 1, 1) - timedelta(days=1)
+    han = _han_luat(ky, hop_nhat)
+    ung = []                                          # (ngày, giờ, nguồn, thứ tự tin cậy khi trùng ngày)
+    for f in filings:
+        if f.get("period") != ky:
+            continue
+        if f.get("issuer_release_date"):
+            ung.append((f["issuer_release_date"][:10], None, "issuer_release_date", 0))
+        if f.get("detected_at"):
+            ung.append((f["detected_at"][:10], f["detected_at"][11:16], "detected_at", 1))
+    for u in urls:
+        for m in re.finditer(r"(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})", urllib.parse.unquote(u or "")):
+            try:
+                d = date(int(m[1]), int(m[2]), int(m[3]))
+            except ValueError:
+                continue
+            if cuoi < d <= cuoi + timedelta(days=120):
+                ung.append((d.isoformat(), None, "document_url", 2))
+                break
+    if not ung:
+        return {"date": han.isoformat(), "time": None, "source": "legal_deadline", "estimated": True, "after_deadline": False}
+    d = min(x[0] for x in ung)
+    cung_ngay = sorted((x for x in ung if x[0] == d), key=lambda x: x[3])
+    gio = next((x[1] for x in cung_ngay if x[1]), None)
+    nguon = cung_ngay[0][2]
+    return {"date": d, "time": gio, "source": nguon, "estimated": nguon == "document_url",
+            "after_deadline": d > han.isoformat()}
+
+
+def phan_ung(cong_bo: dict, gia_ma: list[tuple[str, float]], gia_cs: list[tuple[str, float]],
+             cua_so: tuple[int, ...] = CUA_SO) -> dict | None:
+    """Lợi suất của mã và chỉ số từ giá đóng cửa ngay trước phiên đầu tiên thị trường phản ứng được.
+    Công bố trước 15:00 (biết giờ): phiên đầu là chính ngày đó; sau 15:00 hoặc không rõ giờ: phiên kế tiếp."""
+    ngay, gio = cong_bo["date"], cong_bo.get("time")
+    ds = [d for d, _ in gia_ma]
+    i0 = next((i for i, d in enumerate(ds) if (d >= ngay if gio and gio < "15:00" else d > ngay)), None)
+    if i0 is None or i0 == 0:
+        return None
+    cs = dict(gia_cs)
+    ngay_cs = sorted(cs)
+
+    def cs_luc(d):
+        truoc = [x for x in ngay_cs if x <= d]
+        return cs[truoc[-1]] if truoc else None
+
+    goc_d, goc = gia_ma[i0 - 1]
+    goc_cs = cs_luc(goc_d)
+
+    def lo(j):
+        d, c = gia_ma[j]
+        r = (c / goc - 1) * 100
+        rc = None if goc_cs is None or cs_luc(d) is None else (cs_luc(d) / goc_cs - 1) * 100
+        return {"date": d, "close": c, "stock_pct": round(r, 2), "index_pct": None if rc is None else round(rc, 2),
+                "excess_pct": None if rc is None else round(r - rc, 2)}
+
+    return {"base_date": goc_d, "base_close": goc, "first_session": ds[i0],
+            "windows": {str(k): lo(i0 + k - 1) for k in cua_so if i0 + k - 1 < len(gia_ma)},
+            "to_date": {**lo(len(gia_ma) - 1), "sessions": len(gia_ma) - i0}}
+
+
+def _nhom_tang(v) -> str:
+    if not isinstance(v, (int, float)):
+        return "khong_tinh_duoc"
+    return "giam" if v < 0 else "tang_0_20" if v <= 20 else "tang_tren_20"
+
+
+TEN_NHOM = {"giam": "Lợi nhuận công ty mẹ giảm so với cùng kỳ", "tang_0_20": "Tăng 0–20%", "tang_tren_20": "Tăng trên 20%",
+            "khong_tinh_duoc": "Không tính được tăng trưởng (lỗ, đổi dấu, thiếu số)", "tat_ca": "Tất cả"}
+
+
+def _su_kien(ma: str, ky: str, s: dict, filings: list[dict], gia_ma, gia_cs) -> dict:
+    g = tom_tat(s)
+    cb = ngay_cong_bo(ky, filings, [f.get("document_url") for f in filings if f.get("period") == ky] + [g["source"]["document_url"]],
+                      g.get("scope") == "consolidated")
+    pu = phan_ung(cb, gia_ma, gia_cs)
+    kq = g["income_statement"]
+    return {"ticker": ma, "period": ky, "status": g["status"], "release": cb,
+            "net_profit_parent_yoy_pct": (kq.get("net_profit_parent") or {}).get("quarter_growth_pct"),
+            "revenue_yoy_pct": (kq.get("revenue") or {}).get("quarter_growth_pct"),
+            "group": _nhom_tang((kq.get("net_profit_parent") or {}).get("quarter_growth_pct")),
+            "document_url": g["source"]["document_url"], "reaction": pu}
+
+
+def _gia_ma_va_chi_so(ma: str, tu: date) -> tuple[list, list, str, str]:
+    try:
+        san = (api(f"/companies/{ma}").get("data") or {}).get("exchange")
+    except LoiWealbee:
+        san = None
+    if not san:
+        try:
+            san = api(f"/companies/{ma}").get("exchange")
+        except LoiWealbee:
+            san = None
+    cs_ma = CHI_SO_SAN.get(str(san or "").upper(), "VNINDEX")
+    hom_nay = datetime.now(VN).date()
+    gm, nguon = gia(ma, tu, hom_nay)
+    gc, _ = gia(cs_ma, tu, hom_nay)
+    return gm, gc, nguon, cs_ma
+
+
+def lenh_prices(a):
+    den = date.fromisoformat(a.to) if a.to else datetime.now(VN).date()
+    tu = date.fromisoformat(a.from_) if a.from_ else den - timedelta(days=90)
+    out, nguon = gia(a.ticker, tu, den)
+    return {"ticker": a.ticker.upper(), "unit": "nghìn đồng", "adjusted": "theo nguồn (cổ tức, chia tách)", "source": nguon,
+            "prices": [{"date": d, "close": c} for d, c in out]}
+
+
+def lenh_reaction(a):
+    ma = a.ticker.strip().upper()
+    if a.all:
+        cov = (api(f"/companies/{ma}").get("data") or api(f"/companies/{ma}")).get("coverage") or {}
+        ky, het = cov.get("first_period"), cov.get("latest_period")
+        if not ky:
+            raise LoiWealbee(f"{ma} chưa có kỳ BCTC nào trong Data API.")
+        ds_ky = [ky]
+        while ds_ky[-1] != het and len(ds_ky) < 40:
+            ds_ky.append(ky_truoc(ds_ky[-1], -1))
+    else:
+        ds_ky = [chuan_ky(a.period) or tom_tat(lay_bctc(ma, None))["period"]]
+    filings = api("/filings", {"ticker": ma, "limit": 100}).get("data") or []
+    bctc = {k: lay_bctc(ma, k) for k in ds_ky}
+    tu = min(_han_luat(k, True) for k in ds_ky) - timedelta(days=60)
+    gm, gc, nguon, cs_ma = _gia_ma_va_chi_so(ma, tu)
+    ev = [_su_kien(ma, k, bctc[k], filings, gm, gc) for k in ds_ky]
+    return {"ticker": ma, "index": cs_ma, "price_source": nguon, "unit": "%", "events": ev,
+            "notes": "Lợi suất tính từ giá đóng cửa ngay trước phiên đầu tiên thị trường phản ứng được với BCTC (công bố sau 15:00 hoặc "
+                     "không rõ giờ thì phiên đầu là phiên kế tiếp). Giá đã điều chỉnh cổ tức, chia tách theo nguồn, nên lợi suất gồm cổ tức. "
+                     "excess_pct = lợi suất mã trừ lợi suất chỉ số sàn cùng khoảng, chưa điều chỉnh rủi ro. release.estimated = true: "
+                     "ngày lấy từ tên file hoặc hạn luật, chưa phải ngày công bố thật. Số liệu lịch sử, không dự báo giá."}
+
+
+def lenh_event_study(a):
+    ds_ky = [chuan_ky(k) for k in (a.period or [])] or [tom_tat(lay_bctc("VNM", None))["period"]]
+    tickers = [t.upper() for chuoi in (a.tickers or []) for t in re.split(r"[,\s]+", chuoi) if t]
+    sai = [t for t in tickers if not re.fullmatch(r"[A-Z0-9]{2,10}", t)]
+    if sai:
+        raise LoiWealbee(f"Mã không hợp lệ: {', '.join(sai)}")
+    su_kien, loi = [], []
+    for ky in ds_ky:
+        if tickers:
+            bctc = {}
+            for t in tickers:
+                try:
+                    bctc[t] = lay_bctc(t, ky)
+                except LoiWealbee as e:
+                    loi.append(f"{t}.{ky}: {e}")
+        else:
+            if not a.industry:
+                raise LoiWealbee("Cần --tickers hoặc --industry.")
+            ds = sorted(_bctc_ky(ky, a.industry, True),
+                        key=lambda s: -((s.get("balance_sheet") or {}).get("total_assets") or {}).get("end_of_period", 0) or 0)
+            bctc = {s["ticker"]: s for s in ds[: a.limit]}
+        filings = tat_ca("/filings", {"period": ky}, toi_da=6000)
+        theo_ma: dict[str, list] = {}
+        for f in filings:
+            theo_ma.setdefault(f.get("ticker"), []).append(f)
+        tu = _han_luat(ky, True) - timedelta(days=60)
+        for t, s in bctc.items():
+            try:
+                gm, gc, _, _ = _gia_ma_va_chi_so(t, tu)
+                e = _su_kien(t, ky, s, theo_ma.get(t, []), gm, gc)
+                if e["reaction"]:
+                    su_kien.append(e)
+                else:
+                    loi.append(f"{t}.{ky}: chưa đủ giá quanh ngày công bố")
+            except LoiWealbee as ex:
+                loi.append(f"{t}.{ky}: {ex}")
+            time.sleep(0.15)
+
+    def tong(nhom_ev):
+        out = {"n_events": len(nhom_ev)}
+        for k in [str(x) for x in CUA_SO] + ["to_date"]:
+            xs = [(e["reaction"]["windows"].get(k) if k != "to_date" else e["reaction"]["to_date"]) for e in nhom_ev]
+            ex = [x["excess_pct"] for x in xs if x and x.get("excess_pct") is not None]
+            st = [x["stock_pct"] for x in xs if x]
+            if not ex:
+                continue
+            out[k] = {"n": len(ex), "mean_excess_pct": round(sum(ex) / len(ex), 2), "median_excess_pct": phan_vi(ex, 0.5),
+                      "pct_beat_index": round(sum(1 for x in ex if x > 0) / len(ex) * 100), "mean_stock_pct": round(sum(st) / len(st), 2)}
+        return out
+
+    nhom = {g: tong([e for e in su_kien if e["group"] == g]) for g in ("giam", "tang_0_20", "tang_tren_20", "khong_tinh_duoc")}
+    nhom["tat_ca"] = tong(su_kien)
+    nguon_ngay = {}
+    for e in su_kien:
+        nguon_ngay[e["release"]["source"]] = nguon_ngay.get(e["release"]["source"], 0) + 1
+    return {"periods": ds_ky, "n_events": len(su_kien), "release_date_sources": nguon_ngay,
+            "release_after_deadline": [f"{e['ticker']}.{e['period']}" for e in su_kien if e["release"].get("after_deadline")],
+            "groups": {g: {"label": TEN_NHOM[g], **v} for g, v in nhom.items()},
+            "events": [{k: e[k] for k in ("ticker", "period", "status", "release", "net_profit_parent_yoy_pct", "group")}
+                       | {"excess_pct": {k: (v or {}).get("excess_pct") for k, v in e["reaction"]["windows"].items()},
+                          "to_date_excess_pct": e["reaction"]["to_date"]["excess_pct"]} for e in su_kien],
+            "skipped": loi,
+            "notes": "Nghiên cứu sự kiện đơn giản: lợi suất vượt chỉ số sàn (excess) sau 1, 5, 10, 20 phiên kể từ phiên đầu tiên "
+                     "thị trường phản ứng được với BCTC. Nhóm theo tăng trưởng lợi nhuận công ty mẹ quý so với cùng kỳ. Chỉ là "
+                     "thống kê lịch sử trên mẫu nhỏ, không xét kỳ vọng của thị trường trước ngày công bố, không dự báo giá."}
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -477,6 +746,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--status", choices=["processing", "in_review", "published", "superseded"]); p.add_argument("--limit", type=int, default=20)
     p.set_defaults(f=lenh_filings)
     p = sub.add_parser("glossary"); p.add_argument("term", nargs="+"); p.set_defaults(f=lenh_glossary)
+    p = sub.add_parser("prices"); p.add_argument("ticker"); p.add_argument("--from", dest="from_"); p.add_argument("--to")
+    p.set_defaults(f=lenh_prices)
+    p = sub.add_parser("reaction"); p.add_argument("ticker"); p.add_argument("--period"); p.add_argument("--all", action="store_true")
+    p.set_defaults(f=lenh_reaction)
+    p = sub.add_parser("event-study"); p.add_argument("--period", nargs="+"); p.add_argument("--tickers", nargs="+")
+    p.add_argument("--industry", choices=["corporate", "bank", "securities", "insurance"]); p.add_argument("--limit", type=int, default=40)
+    p.set_defaults(f=lenh_event_study)
     a = ap.parse_args(argv)
     try:
         kq = a.f(a)
