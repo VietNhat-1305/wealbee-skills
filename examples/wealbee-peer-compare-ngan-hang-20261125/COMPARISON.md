@@ -8,9 +8,9 @@
 
 | Mã | Lợi nhuận công ty mẹ Q3 (tỷ đồng) | So với cùng kỳ | Luỹ kế 9 tháng (tỷ đồng) | Tổng tài sản (nghìn tỷ đồng) | ROE quy năm | ROA quy năm | Nợ phải trả / vốn chủ (lần) | Trạng thái |
 |---|---|---|---|---|---|---|---|---|
-| BID | 8.330,7 | +39,9% | 23.277,7 | 3.493,3 | 16,8% | 0,9% | 16,21 | needs_review |
-| CTG | 10.834,8 | +28,2% | 31.491,8 | 2.951,8 | 21,7% | 1,5% | 13,23 | verified |
-| MBB | 8.039,5 | +44,3% | 23.784,1 | 1.837,9 | 21,2% | 1,9% | 10,20 | verified |
+| BID | 8.330,7 | +39,9% | 23.277,7 | 3.493,3 | 16,7% | 0,9% | 16,21 | needs_review |
+| CTG | 10.834,8 | +28,2% | 31.491,8 | 2.951,8 | 21,8% | 1,5% | 13,23 | verified |
+| MBB | 8.039,5 | +44,3% | 23.784,1 | 1.837,9 | 21,3% | 1,9% | 10,20 | verified |
 | TCB | 7.942,9 | +23,7% | 21.964,1 | 1.318,2 | 16,3% | 2,4% | 5,68 | verified |
 | VCB | 9.033,3 | +0,1% | 33.032,1 | 2.682,4 | 18,4% | 1,7% | 9,57 | verified |
 | *Trung vị 26 BCTC ngân hàng Q3/2026* | | *+10,0%* | | | *16,2%* | *1,4%* | *10,32* | |
@@ -23,7 +23,7 @@ Bảng sắp theo chữ cái của mã, không phải thứ hạng. Cả 5 mã c
 
 - **VCB gần như đi ngang so với cùng kỳ, các mã còn lại tăng 23,7–44,3%.** Lý do nằm ở quý 2: lợi nhuận quý 2/2026 của VCB là 14.542,3 tỷ đồng (+64,7%), cao hơn hẳn các quý khác của chính VCB trong dữ liệu (8.702–9.457 tỷ). Tính luỹ kế 9 tháng, lợi nhuận sau thuế VCB vẫn tăng 24,4% [S5]. Quý 2 có khoản thu bất thường nào không? Data API chưa có dòng chi tiết; cần xem BCTC quý 2 của VCB.
 - **Đòn bẩy chênh gần 3 lần.** Nợ phải trả / vốn chủ của TCB là 5,68 lần, dưới p25 của nhóm ngân hàng. BID là 16,21 lần, trên p75. Vốn chủ hai ngân hàng gần bằng nhau (197,3 và 203,0 nghìn tỷ đồng), nhưng tổng tài sản của BID lớn gấp 2,65 lần TCB.
-- **ROA cao chưa chắc ROE cao.** ROE xấp xỉ ROA nhân với tổng tài sản / vốn chủ. TCB có ROA 2,4%, cao hơn 4 mã còn lại, nhưng tài sản chỉ gấp 6,7 lần vốn chủ nên ROE còn 16,3%. CTG có ROA 1,5% nhưng tài sản gấp 14,2 lần vốn chủ, ROE 21,7%. Hai con đường khác nhau tới cùng mức ROE: sinh lời trên tài sản, hoặc dùng nhiều vốn huy động hơn.
+- **ROA cao chưa chắc ROE cao.** ROE xấp xỉ ROA nhân với tổng tài sản / vốn chủ. TCB có ROA 2,4%, cao hơn 4 mã còn lại, nhưng tài sản chỉ gấp 6,7 lần vốn chủ nên ROE còn 16,3%. CTG có ROA 1,5% nhưng tài sản gấp 14,2 lần vốn chủ, ROE 21,8%. Hai con đường khác nhau tới cùng mức ROE: sinh lời trên tài sản, hoặc dùng nhiều vốn huy động hơn.
 - **Quy mô.** Tổng tài sản từ 1.318,2 nghìn tỷ đồng (TCB) đến 3.493,3 nghìn tỷ đồng (BID); vốn chủ từ 164,1 nghìn tỷ (MBB) đến 253,8 nghìn tỷ (VCB). Lợi nhuận quý 3 của CTG (10.834,8 tỷ) cao hơn VCB (9.033,3 tỷ) dù vốn chủ nhỏ hơn, nhưng luỹ kế 9 tháng thì VCB cao hơn (33.032,1 so với 31.491,8 tỷ).
 
 ## Xu hướng 4 quý

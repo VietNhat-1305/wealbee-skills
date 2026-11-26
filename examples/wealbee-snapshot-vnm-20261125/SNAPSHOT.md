@@ -12,8 +12,8 @@ HOSE · doanh nghiệp thường (corporate) · BCTC hợp nhất Q3/2026, đã 
 | Lợi nhuận công ty mẹ | 2.964,2 tỷ | 2.526,8 tỷ | +17,3% | tăng 8,2% |
 | Biên lợi nhuận gộp | 41,4% | 41,6% | −0,3 điểm % | 16,9% |
 | Biên lợi nhuận ròng | 16,0% | 14,8% | +1,3 điểm % | 4,6% |
-| ROE quy năm | 31,6% | Data API chưa có | | 9,7% |
-| ROA quy năm | 20,7% | Data API chưa có | | 4,3% |
+| ROE quy năm | 31,5% | Data API chưa có | | 9,7% |
+| ROA quy năm | 20,6% | Data API chưa có | | 4,3% |
 | Nợ phải trả / vốn chủ | 0,51 lần | 0,55 lần (đầu năm) | | 0,84 lần |
 
 Luỹ kế 9 tháng: doanh thu 53.461,2 tỷ đồng (+14,5%), lợi nhuận sau thuế 8.604,8 tỷ đồng (+30,6%) [S1].
@@ -41,7 +41,7 @@ Số quý 2025 lấy từ cột cùng kỳ trong BCTC 2026, có thể đã đi�
 So với 900 BCTC doanh nghiệp thường đã kiểm chứng của quý 3/2026 [S2]:
 
 - Biên gộp 41,4% và biên ròng 16,0% cao hơn p75 (33,7% và 14,9%). Mức này cao hơn 83% và 77% số BCTC cùng loại hình.
-- ROE quy năm 31,6% cao hơn 93% số BCTC, ROA 20,7% cao hơn 95%. Hai số này đều trên p75 (17,9% và 9,6%).
+- ROE quy năm 31,5% cao hơn 93% số BCTC, ROA 20,6% cao hơn 95%. Hai số này đều trên p75 (17,8% và 9,6%).
 - Tăng trưởng doanh thu 8,7% thấp hơn trung vị (12,5%), nằm trong khoảng p25–p75. Tăng trưởng lợi nhuận 17,3% cao hơn trung vị 8,2%.
 - Nợ phải trả / vốn chủ 0,51 lần thấp hơn trung vị 0,84 lần; vay / vốn chủ 0,22 lần.
 

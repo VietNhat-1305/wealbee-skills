@@ -119,9 +119,18 @@ class TomTat(unittest.TestCase):
         self.assertEqual(r["liabilities_to_equity"], 0.51)
         self.assertEqual(r["borrowings_to_equity"], 0.22)
         self.assertEqual(r["roe_ytd_pct"], 23.7)
-        self.assertEqual(r["roe_annualized_pct"], 31.6)
-        self.assertEqual(r["roa_annualized_pct"], 20.7)
+        self.assertEqual(r["roe_annualized_pct"], 31.5)
+        self.assertEqual(r["roa_annualized_pct"], 20.6)
         self.assertIn("chưa có vốn chủ công ty mẹ", r["roe_basis"])
+
+    def test_quy_nam_khong_lam_tron_hai_lan(self):
+        # CTG Q3/2026: 31.614,8 / bình quân(179.655,0; 207.465,6) = 16,334% -> quy năm 21,78% -> 21,8 (không phải 16,3 x 12/9 = 21,7)
+        s = bctc_vnm()
+        s["income_statement"]["net_profit"]["ytd"] = 31614.8 * TY
+        s["balance_sheet"]["equity"] = {"end_of_period": 207465.6 * TY, "start_of_year": 179655.0 * TY}
+        r = wb.tom_tat(s)["ratios"]
+        self.assertEqual(r["roe_ytd_pct"], 16.3)
+        self.assertEqual(r["roe_annualized_pct"], 21.8)
 
     def test_roe_dung_von_chu_cong_ty_me_khi_co(self):
         s = bctc_vnm()
